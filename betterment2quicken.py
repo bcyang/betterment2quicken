@@ -1,10 +1,9 @@
 import csv
-
 import sys
 
 import pytz
-from docopt import docopt
 from dateutil import parser as dtparser
+from docopt import docopt
 
 USAGE = '''Usage:
     betterment2quicken.py <transactions.csv>
@@ -86,10 +85,13 @@ class OFX(object):
             self.rows = list(reader)
 
         # the key we will use to construct dict for format()
+        # we convert the CVS headers into keys so we don't have to think / re-invent
+        # another set of keys
         self.keys = [o.replace(' ', '_').lower() for o in self.headers]
 
     @staticmethod
     def datetime_str(str):
+        # per OFX Spec, this should be UTC, YYYYMMDDHHMMSS is good enough
         return dtparser.parse(str).astimezone(pytz.utc).strftime('%Y%m%d%H%M%S')
 
     def render_ofx(self):
@@ -100,17 +102,33 @@ class OFX(object):
 
         for row in self.rows:
             ctx = dict(zip(self.keys, row))
+            # they are supposedly to be the same
             if account_id is None:
                 account_id = ctx['goal_name']
+
+            # the records comes ordered by date_created or date_complete, descending
             if ending_balance is None:
                 ending_balance = ctx['ending_balance']
+
+            # use DEP (Deposit) for deposits
+            # use ? for Withdraw (I haven't needed to do it yet), not sure what the description looks like
+            # use XFER (Transfer) for anything else (e.g. Market Changes)
             ctx['type'] = 'DEP' if 'Deposit' in ctx['transaction_description'] else 'XFER'
+
+            # convert datetime to OFX datetime format
             for datekey in ['date_created', 'date_completed']:
                 ctx[datekey] = self.datetime_str(ctx[datekey])
+                # we will use these timestamps later
                 rendered_dts.add(ctx[datekey])
+
+            # construct a pseudo-unique transaction id. Quicken use this to determine if
+            # a record has been imported. (date, description, amount) should be achieving
+            # the desired affect
             ctx['id'] = str(abs(hash((ctx['date_created'],
                                       ctx['transaction_description'],
                                       ctx['amount']))))
+
+            # render the record
             records.append(RECORD_TEMPLATE.format(**ctx))
 
         return STATEMENT_TEMPLATE.format(**{

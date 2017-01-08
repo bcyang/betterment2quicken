@@ -1,0 +1,7 @@
+# making parsing datestr correctly easy
+python-dateutil==2.6.0
+pytz==2016.10
+
+# fun command line parsing
+docopt==0.6.2
+

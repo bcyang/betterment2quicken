@@ -35,7 +35,7 @@ NEWFILEUID:NONE
             </STATUS>
             <DTSERVER>{last_record_dt}</DTSERVER>
             <LANGUAGE>ENG</LANGUAGE>
-            <INTU.BID>62160</INTU.BID> <!--
+            <INTU.BID>62160</INTU.BID>
         </SONRS>
     </SIGNONMSGSRSV1>
     <BANKMSGSRSV1>
